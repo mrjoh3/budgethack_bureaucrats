@@ -1,0 +1,28 @@
+---
+title: "budget paper"
+author: "mj"
+date: "23 March 2016"
+output: html_document
+---
+
+
+
+```{r}
+
+library(readxl)
+library(stringr)
+library(plyr)
+library(dplyr)
+
+data <- read_excel('C:/WORK/repositories/BUDGET_HACK/data/2015-16-State-Capital-Program.xlsx', skip=3, sheet='BP4') %>%
+    filter(`New / Existing / Completed` != 'Completed')
+
+
+df <- data %>%
+    rowwise() %>%
+    mutate(split = strsplit(`Project Name`, '\\(|\\)'),
+           location = split[2])
+
+
+
+```
