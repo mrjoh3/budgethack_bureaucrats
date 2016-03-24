@@ -5,6 +5,7 @@
 
 This file is supposed to describe the project, but we can also use it to propose ideas and / or soluions to problems. Just in case, this is a markdown file so it uses a very simple syntax to format to HTML.
 
+<<<<<<< HEAD
 ## ToDo
 
 Local Government Area
@@ -16,6 +17,8 @@ Socio economic disadvantage indicator
 Population by LGA for the map.
 Income by LGA
 
+=======
+>>>>>>> c20b3b7243b17afcf61a8ab807fae4139859628a
 
 ## Ideas
 
