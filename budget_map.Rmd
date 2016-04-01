@@ -5,24 +5,405 @@ date: "23 March 2016"
 output: html_document
 ---
 
+<style>
+h1 {margin-top: 120px;
+   font-size: 300%;
+   margin-bottom: 50px;}
+h2 {margin-top: 60px;}
+h3 {margin-top: 50px;}
+h4 {margin-top: 50px;}
+.left {
+float: left;
+width: 80%;
+}
+.right {
+float: right;
+width: 20%;
+}
 
 
-```{r}
+</style>
+
+```{r setup, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE}
+
+library(knitr)
+
+opts_chunk$set(cache=FALSE, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, fig.width=9, fig.height=4)
+```
+
+## Step One - Import Data
+
+Here we import the Victoria spatial data for suburbs and the expentiture dataset. Once completed this will give a value per suburb in a format that can be mapped. The expenditure dataset is a bit horible to get location names out of and there are a mix of suburb names, LGA names, regions and a mixof other spatial scales. Cleaning this is endless and I have to draw the line and move on.
+
+```{r libraries}
 
 library(readxl)
+library(readr)
 library(stringr)
 library(plyr)
 library(dplyr)
+library(tidyr)
+library(stringr)
+library(stringi)
+library(rgeos)
+library(leaflet)
+library(jsonlite)
+library(geojsonio)
+library(ggplot2)
+library(dygraphs)
 
-data <- read_excel('C:/WORK/repositories/BUDGET_HACK/data/2015-16-State-Capital-Program.xlsx', skip=3, sheet='BP4') %>%
-    filter(`New / Existing / Completed` != 'Completed')
+#setwd('C:/WORK/budgethack_bureaucrats')
 
+# import suburbs geojson
+# geojson <- readLines("data/vic_suburbs_simple3.geojson", warn = FALSE, encoding = 'ASCII') %>%
+#   paste(collapse = "\n") %>%
+#   fromJSON(simplifyVector = FALSE)
+# 
+# # Gather GDP estimate from all countries
+# geojson.names <- sapply(geojson$features, function(feat) {
+#   feat$properties$vic_loca_2
+# })
+
+
+abs.suburbs <- rgdal::readOGR('mapping', layer='SSC_simple')
+#vic <- abs.sub[abs.sub$STE_NAME11 == "Victoria",]
+
+# clean list of ABS suburb names and hierarchy
+ssc.csv <- read_csv('mapping/SSC_2011_AUST.csv') %>%
+    mutate(state = str_sub(SA1_MAINCODE_2011, 1,1)) %>%
+    filter(state == '2')
+sa1.csv <- read_csv('mapping/SA1_2011_AUST.csv')
+
+ssc <- left_join(ssc.csv, sa1.csv) %>%
+    select(SSC_CODE_2011, SSC_NAME_2011,
+           SA2_NAME_2011, SA3_NAME_2011, SA4_NAME_2011,
+           GCCSA_NAME_2011) %>%
+    filter(!(SSC_NAME_2011 %in% c("Migratory - Offshore - Shipping (Vic.)",
+                                  "No usual address (Vic.)",
+                                  "Unclassified (Vic.)"))) %>%
+    mutate(SSC_NAME_2011 = toupper(gsub(' \\(Vic.\\)', '', SSC_NAME_2011))) %>%
+    distinct(SSC_CODE_2011) %>%
+    rename(SSC_CODE = SSC_CODE_2011)
+
+rm(ssc.csv, sa1.csv)
+
+suburb.names <- ssc$SSC_NAME_2011
+
+# filter suburbs down to Cleaned Victoria
+abs.sub <- abs.suburbs[abs.suburbs$SSC_CODE %in% ssc$SSC_CODE, ]
+rm(abs.suburbs)
+
+#abs.sub@data <- merge(abs.sub@data, ssc)
+
+# import budget data
+data <- read_excel('data/2015-16-State-Capital-Program.xlsx', skip=3, sheet='BP4') %>%
+    filter(`New / Existing / Completed` != 'Completed',
+           !grepl('All projects with a TEI less than $1 million', `Project Name`)) %>%
+    rowwise() %>%
+    mutate(vsplit = strsplit(`Project Name`, '\\(|\\)'),
+           vlen = length(vsplit)) %>%
+    filter(vlen > 1)
+
+# vlen > 1 removes 
+# `Project Name` != "All remaining projects with a TEI less than $1 million",
+# `Project Name` != "All projects with a TEI less than $1 million",
+# `Project Name` != "Enterprise resource planning new business system implementation"
+
+data$location <- sapply(data$vsplit, function(r) {
+                                            vals = grep('^[[:upper:]]|metro various|various|statewide', r)
+                                            val = r[vals[vals>1]]
+                                            if (identical(val, character(0))) {
+                                                return(NA)
+                                            } else if (length(val) > 1 & any(grepl('statewide',  val))) {
+                                                return('statewide')
+                                            } else if (val[1] == "Commonwealth Games Village") {
+                                                return(val[2])
+                                            } else if (length(val) > 1 & any(grepl('non-metro various',  val))) {
+                                                return('non-metro various')
+                                            } else if (grepl("Gippsland, Bendigo, Ballarat", val)) {
+                                                return('Gippsland/Bendigo/Ballarat/Geelong/Monash/Casey/Wyndham/Banyule/Yarra Ranges/Whittlesea')
+                                            } else {
+                                                return(val)
+                                            }
+                                            }
+                                            )
+
+# final suburb split on ',|/|and'
+```
+
+
+## Calculate Expenditure per Location
+
+Some expenditure goes to multiple locations so this needs to be split out first. Then expenditure is summed for single locations. 
+
+```{r values}
 
 df <- data %>%
-    rowwise() %>%
-    mutate(split = strsplit(`Project Name`, '\\(|\\)'),
-           location = split[2])
+    mutate(location = iconv(location, to='ASCII'),
+           subs = strsplit(location, '/| and | - '),
+           nsubs = length(subs),
+           sub.value = as.numeric(`Total Estimated Investment`) / nsubs) %>%
+    unnest(subs) %>%
+    mutate(subs = toupper(str_trim(subs, side = 'both'))) %>%
+    group_by(subs) %>%
+    summarise(value = sum(sub.value, na.rm=TRUE)) %>%
+    mutate(subs = ifelse(is.na(subs), 'VARIOUS', subs))
+
+
+```
+
+
+## Join Locations and Expediture to Suburbs
+
+Some suburb names needed to be modified so that the Expenditure dataset and Suburbs spatial data would match. The plot below indicates the locations that have not been allocated to a suburb. 
+
+```{r suburbs}
+# fix suburb names
+#                                         FROM                     TO
+rename.suburbs <- data.frame(rbind(
+                                   c('LOWER TEMPLESTOWE', 'TEMPLESTOWE LOWER'),
+                                    c('MT BULLER', 'MOUNT BULLER'),
+                                    c('MT MARTHA', 'MOUNT MARTHA'),
+                                    c('CURDIE VALE', 'CURDIEVALE'),
+                                    c('DINGLEY', 'DINGLEY VILLAGE'),
+                                    c('BALLARAT WEST', 'BALLARAT CENTRAL'),
+                                    c('BALLARAT', 'BALLARAT CENTRAL'),
+                                   c('EPPING NORTH', 'EPPING'),
+                                   c('KIALLA LAKES','KIALLA'),
+                                   c('EAST WERRIBEE', 'WERRIBEE'),
+                                     c('BROADFORD - KILMORE', 'BROADFORD'),
+                                     c('MT COTTRELL', 'MOUNT COTTRELL'),
+                                     c("HUNTLY NORTH", 'HUNTLY'),
+                                     c('WYNDHAM', 'WYNDHAM VALE'),
+                                   c('BARWON REGION', 'BARWON')
+                                ), stringsAsFactors = FALSE
+                    )
+
+df$subs <- mapvalues(df$subs, from = rename.suburbs[,1], to = rename.suburbs[,2])
+
+
+
+write.csv(df, 'data/expenditure_by_location.csv', row.names = FALSE)
+
+
+# filter expenditure data by locations in and out of the suburbs list plus statewide and other identifiable regions
+df.suburbs <- filter(df, subs %in% suburb.names) %>%
+    group_by(subs) %>%
+    summarise(value = sum(value, na.rm=TRUE))
+
+df.other <- filter(df, 
+                   !(subs %in% suburb.names),
+                   !(subs %in% c('STATEWIDE',
+                                 'METRO VARIOUS',
+                                 'NON-METRO VARIOUS', 
+                                 'RURAL VARIOUS',
+                                 'NORTH-WEST METRO',
+                                 'BARWON',
+                                 'CASEY',
+                                 'LATROBE', 'GIPPSLAND', 'LATROBE VALLEY',
+                                 'MONASH',
+                                 'BANYULE',
+                                 'YARRA RANGES',
+                                 'STONNINGTON',
+                                 'GLEN EIRA',
+                                 'MORNINGTON PENINSULA',
+                                 'PHILLIP ISLAND',
+                                 'PORT PHILLIP'))) %>% 
+    arrange(desc(value)) %>%
+    group_by(subs) %>%
+    summarise(value = sum(value, na.rm=TRUE))
+
+statewide.value <- filter(df, subs == 'STATEWIDE')$value / length(suburb.names)
+metro.value <- sum(filter(df, subs == 'METRO VARIOUS')$value) / nrow(filter(ssc, GCCSA_NAME_2011 == 'Greater Melbourne'))
+regional.rural.value <- sum(filter(df, subs %in% c('NON-METRO VARIOUS', 'RURAL VARIOUS'))$value) / nrow(filter(ssc, GCCSA_NAME_2011 == "Rest of Vic."))
+nw.metro.value <- sum(filter(df, subs == 'NORTH-WEST METRO')$value) / nrow(filter(ssc, SA4_NAME_2011 == "Melbourne - North West"))
+barwon.value <- sum(filter(df, subs == 'BARWON')$value) / nrow(filter(ssc, SA3_NAME_2011 == "Barwon - West"))
+casey.value <- sum(filter(df, subs == 'CASEY')$value) / nrow(filter(ssc, SA3_NAME_2011 == "Casey - North"))
+latrobe.gipps.value <- sum(filter(df, subs %in% c('LATROBE', 'GIPPSLAND', 'LATROBE VALLEY'))$value) / nrow(filter(ssc, SA4_NAME_2011 == "Latrobe - Gippsland"))
+monash.value <- sum(filter(df, subs == 'MONASH')$value) / sum(grepl('Monash', ssc$SA3_NAME_2011, TRUE))
+stonnington.value <- sum(filter(df, subs == 'STONNINGTON')$value) / sum(grepl('STONNINGTON', ssc$SA3_NAME_2011, TRUE))
+banyule.value <- sum(filter(df, subs == 'BANYULE')$value) / sum(grepl('BANYULE', ssc$SA3_NAME_2011, TRUE))
+yarra.value <- sum(filter(df, subs == 'YARRA RANGES')$value) / sum(grepl('Yarra', ssc$SA3_NAME_2011, TRUE))
+gleneira.value <- sum(filter(df, subs == 'GLEN EIRA')$value) / sum(grepl('GLEN EIRA', ssc$SA3_NAME_2011, TRUE))
+mornington.value <- sum(filter(df, subs == 'MORNINGTON PENINSULA')$value) / sum(grepl('mornington', ssc$SA3_NAME_2011, TRUE))
+phillip.island.value <- sum(filter(df, subs == 'PHILLIP ISLAND')$value) / sum(grepl('Phillip Island', ssc$SA2_NAME_2011, TRUE))
+pt.phillip.value <- sum(filter(df, subs == 'PORT PHILLIP')$value) / sum(grepl('PORT PHILLIP', ssc$SA3_NAME_2011, TRUE))
+
+
+
+# add values to SSC
+
+ssc.vals <- left_join(ssc, select(df.suburbs, SSC_NAME_2011 = subs, value)) %>%
+    mutate(value = ifelse(is.na(value), 0, value),
+           value = value + statewide.value,
+           value = ifelse(GCCSA_NAME_2011 == 'Greater Melbourne', value + metro.value, value),
+           value = ifelse(GCCSA_NAME_2011 == "Rest of Vic.", value + regional.rural.value, value),
+           value = ifelse(SA4_NAME_2011 == "Melbourne - North West", value + nw.metro.value, value),
+           value = ifelse(SA3_NAME_2011 == "Barwon - West", value + barwon.value, value),
+           value = ifelse(SA3_NAME_2011 == "Casey - North", value + casey.value, value),
+           value = ifelse(SA4_NAME_2011 == "Latrobe - Gippsland", value + latrobe.gipps.value, value),
+           value = ifelse(grepl('Monash', ssc$SA3_NAME_2011, TRUE), value + monash.value, value),
+           value = ifelse(grepl('STONNINGTON', ssc$SA3_NAME_2011, TRUE), value + stonnington.value, value),
+           value = ifelse(grepl('BANYULE', ssc$SA3_NAME_2011, TRUE), value + banyule.value, value),
+           value = ifelse(grepl('YARRA', ssc$SA3_NAME_2011, TRUE), value + yarra.value, value),
+           value = ifelse(grepl('GLEN EIRA', ssc$SA3_NAME_2011, TRUE), value + gleneira.value, value),
+           value = ifelse(grepl('mornington', ssc$SA3_NAME_2011, TRUE), value + mornington.value, value),
+           value = ifelse(grepl('Phillip Island', ssc$SA2_NAME_2011, TRUE), value + phillip.island.value, value),
+           value = ifelse(grepl('Port Phillip', ssc$SA3_NAME_2011, TRUE), value + pt.phillip.value, value))
+    
+    
+ggplot(df.other, aes(x=subs, y=value)) +
+    geom_bar(stat='identity') +
+    coord_flip() +
+    scale_y_log10() +
+    ggtitle('Location Expenditure not matched to a Suburb') +
+    xlab('Locations') + ylab('Expenditure A$ ,000')
+
+```
+
+
+# Import Population Data
+
+The population data is needed to calculate the expenditure per person for each Suburb. Again there is a problem with matching the location data. The State based Suburb data is not compatible with the ABS based population data. The ABS data contains roughly half the number of suburbs and so cannot be directly linked.
+
+I will explore using ABS SLA1 as a proxy for suburbs and this may solve many problems including the simple deliniation of metro and regional locations.
+
+
+```{r population, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+
+#pop <- readOGR('mapping/doc.kml', '2011 IRSD - SSC')
+#pop <- readOGR('mapping', 'SOS_2011_AUST')
+population <- read_excel('data/2033.0.55.001 ssc indexes.xls',
+                  sheet = "Table 2",
+                  skip = 5)[, c(1,3,4,8)]
+names(population) <- c('SSC_CODE', 'population', 'score', 'state')
+
+pop <- filter(population, state == 'VIC')
+    
+
+```
+
+
+## Merge Suburb and Population Data
+
+Merge is made on the ABS suburb ID
+
+```{r}
+
+ssc.pop <- left_join(ssc.vals, pop) %>%
+    mutate(expenditure = value / population)
+
+
+ggplot(ssc.pop, aes(x=score, y=expenditure)) + 
+    geom_point() +
+    ggtitle('Expenditure per Person for each Suburb by Socio-Economic Score')
+
+```
+
+## Merge with Spatial Data
+
+```{r}
+
+abs.sub@data <- merge(abs.sub@data, ssc.pop, by = 'SSC_CODE')
 
 
 
 ```
+
+
+
+
+## The Map
+
+Here is the basic map. The data is in GeoJSON format so it can be saved and used outside of R. 
+
+```{r map}
+
+pal <- colorQuantile("Blues", abs.sub@data$expenditure, n = 6, na.color = 'red')
+
+
+
+
+leaflet(abs.sub) %>%
+    addProviderTiles("CartoDB.Positron", group = 'Default') %>%
+    setView(lng = 144.97, lat = -37.4, zoom = 7) %>% 
+    addPolygons(stroke = FALSE,
+                fillOpacity = 0.5,
+                color = ~pal(expenditure))
+
+
+```
+
+
+
+## Attemped LGA Translation
+
+I had hoped to capture some of the expenditure directed to LGA's. Currently this is on hold.
+
+```{r lga, eval=FALSE}
+
+lga.list <- "Gippsland, Bendigo, Ballarat, Geelong, Monash, Casey, Wyndham, Banyule, Yarra Ranges and Whittlesea"
+lga.list <- unlist(strsplit(lga.list, ', | and '))
+
+lga.list[lga.list == 'Bendigo'] <- 'Greater Bendigo'
+lga.list[lga.list == 'Geelong'] <- 'Greater Geelong'
+lga.list[lga.list == 'Gippsland'] <- 'East Gippsland'
+
+lga.list <- c(lga.list, c('Bass Coast',
+                           'Baw Baw',
+                           'South Gippsland',
+                           'Latrobe',
+                           'Wellington'))
+    
+# import LGA geojson
+
+lga.sp <- rgdal::readOGR(dsn = 'mapping', layer = 'lga', 
+                         p4s = "+init=epsg:4283") # I can't add this to repo not sure of licence
+lga.sub <- lga.sp[lga.sp$LGA_NAME %in% toupper(lga.list),]
+
+# get suburbs that intersect LGA subset
+
+# I suspect there is something wrong with the geometry
+tmp <- rgeos::gIntersection(suburb.sp, lga.sub, byid=TRUE) 
+
+# does not seem to return correct index values!!
+tmp <- Filter(Negate(function(x) is.null(unlist(x))), tmp) 
+
+suburbs <- suburb.sp[as.numeric(names(tmp)),]
+
+```
+
+
+
+## Revenue
+
+
+
+<div class='left'>
+```{r revenue}
+
+
+revenue <- read_excel('data/TaxationRevenueGG.xlsx', 
+                      sheet = 'Overview',
+                      skip = 3) 
+
+colnames(revenue)[1] <- 'Year'
+revenue <- revenue[!is.na(revenue$Year), -seq(3, ncol(revenue), by=2)] %>%
+    mutate_each(funs(as.numeric), -Year) %>%
+    rowwise() %>%
+    mutate(Year = strsplit(Year, '-'),
+           Year = as.numeric(Year[1]))
+
+dygraph(revenue[,-2], periodicity = 'Year') %>%
+    dyAxis("x", drawGrid = FALSE) %>%
+    dyOptions(stackedGraph = TRUE, fillGraph = TRUE, gridLineColor = "lightblue") %>%
+    dyLegend(width = 500, labelsSeparateLines=TRUE, show='always', labelsDiv='legend')
+
+
+```
+
+</div>
+
+<div class='right' id='legend'>
+
+</div>
