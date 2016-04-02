@@ -14,11 +14,11 @@ h3 {margin-top: 50px;}
 h4 {margin-top: 50px;}
 .left {
 float: left;
-width: 80%;
+width: 70%;
 }
 .right {
 float: right;
-width: 20%;
+width: 30%;
 }
 
 
@@ -51,6 +51,8 @@ library(jsonlite)
 library(geojsonio)
 library(ggplot2)
 library(dygraphs)
+library(reshape2)
+library(scales)
 
 #setwd('C:/WORK/budgethack_bureaucrats')
 
@@ -147,7 +149,8 @@ df <- data %>%
     mutate(subs = toupper(str_trim(subs, side = 'both'))) %>%
     group_by(subs) %>%
     summarise(value = sum(sub.value, na.rm=TRUE)) %>%
-    mutate(subs = ifelse(is.na(subs), 'VARIOUS', subs))
+    mutate(subs = ifelse(is.na(subs), 'VARIOUS', subs),
+           value = value * 1000)
 
 
 ```
@@ -255,9 +258,9 @@ ssc.vals <- left_join(ssc, select(df.suburbs, SSC_NAME_2011 = subs, value)) %>%
 ggplot(df.other, aes(x=subs, y=value)) +
     geom_bar(stat='identity') +
     coord_flip() +
-    scale_y_log10() +
     ggtitle('Location Expenditure not matched to a Suburb') +
-    xlab('Locations') + ylab('Expenditure A$ ,000')
+    xlab('Locations') + ylab('Expenditure A$') +
+    scale_y_continuous(labels=dollar)
 
 ```
 
@@ -265,8 +268,6 @@ ggplot(df.other, aes(x=subs, y=value)) +
 # Import Population Data
 
 The population data is needed to calculate the expenditure per person for each Suburb. Again there is a problem with matching the location data. The State based Suburb data is not compatible with the ABS based population data. The ABS data contains roughly half the number of suburbs and so cannot be directly linked.
-
-I will explore using ABS SLA1 as a proxy for suburbs and this may solve many problems including the simple deliniation of metro and regional locations.
 
 
 ```{r population, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
@@ -296,7 +297,8 @@ ssc.pop <- left_join(ssc.vals, pop) %>%
 
 ggplot(ssc.pop, aes(x=score, y=expenditure)) + 
     geom_point() +
-    ggtitle('Expenditure per Person for each Suburb by Socio-Economic Score')
+    ggtitle('Expenditure per Person for each Suburb by Socio-Economic Score') +
+    scale_y_continuous(labels=dollar)
 
 ```
 
@@ -319,7 +321,7 @@ Here is the basic map. The data is in GeoJSON format so it can be saved and used
 
 ```{r map}
 
-pal <- colorQuantile("Blues", abs.sub@data$expenditure, n = 6, na.color = 'red')
+pal <- colorQuantile("Blues", abs.sub@data$expenditure, n = 8, na.color = 'grey')
 
 
 
@@ -329,7 +331,14 @@ leaflet(abs.sub) %>%
     setView(lng = 144.97, lat = -37.4, zoom = 7) %>% 
     addPolygons(stroke = FALSE,
                 fillOpacity = 0.5,
-                color = ~pal(expenditure))
+                color = ~pal(expenditure)) %>%
+    addLegend(position='topright',
+              pal=pal,
+              labFormat = function(type, cuts, p) {
+                        n = length(cuts)
+                        paste0(dollar(cuts[-n]), " &ndash; ", dollar(cuts[-1]))
+                      },
+              values=~expenditure)
 
 
 ```
@@ -402,8 +411,59 @@ dygraph(revenue[,-2], periodicity = 'Year') %>%
 
 ```
 
+
 </div>
 
 <div class='right' id='legend'>
 
 </div>
+
+
+
+```{r budget}
+
+ann.rev <- select(revenue, Year, tax = `Total taxation`) %>%
+    mutate(tax = tax * 1e6)
+
+budget <- read_csv('data/VicBudget.csv') %>%
+    group_by(`Financial Year`) %>%
+    summarise(budget = sum(Actual, na.rm= TRUE)) %>%
+        rowwise() %>%
+    mutate(Year = strsplit(`Financial Year`, '-'),
+           Year = as.numeric(Year[1]))
+
+ann.pop <- read_excel('data/2015-16-Budget-MacroeconomicIndicators.xlsx', 
+                      sheet = 'Population',
+                      skip = 4)[,1:2]
+colnames(ann.pop) <- c('Year', 'Population')
+
+ann.pop <- rowwise(ann.pop) %>%
+    mutate(Year = strsplit(`Year`, '-'),
+           Year = as.numeric(Year[1]),
+           Population = as.integer(as.numeric(Population) * 1000))
+
+pop.lm <- lm(Population ~ Year, ann.pop)
+
+ann.pop$predicted = predict.lm(pop.lm, ann.pop)
+
+ann.pop <- mutate(ann.pop,
+                  Population = ifelse(is.na(Population), as.integer(predicted), Population))
+
+annual <- left_join(budget, ann.rev) %>%
+    left_join(., ann.pop) %>%
+    select(Year, Population, tax, budget) %>%
+    melt(., c('Year','Population')) %>%
+    mutate(per.person = value / Population)
+
+ggplot(annual, aes(x=Year, y=per.person, colour=variable)) + 
+    geom_line() +
+    scale_y_continuous(labels=dollar)
+
+
+```
+
+
+
+
+
+
