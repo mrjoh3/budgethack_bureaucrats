@@ -1,0 +1,546 @@
+<!doctype HTML>
+<meta charset = 'utf-8'>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+<html>
+  <head>
+      <link rel='stylesheet' href='js/leaflet/leaflet.css'>
+      <link rel='stylesheet' href='js/leaflet/leaflet.label.css'>
+      <link rel='stylesheet' href='assets/maps.css'>
+      
+      <script src='js/leaflet/leaflet.js' type='text/javascript'></script>
+<!--      <script src="http://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.js"></script>-->
+      <script src='js/leaflet/leaflet-providers.js' type='text/javascript'></script>
+      <script src='js/leaflet/leaflet.label.js' type='text/javascript'></script>
+    
+      <link rel="stylesheet" href="js/fullscreen/Control.FullScreen.css" />
+      <script src="js/fullscreen/Control.FullScreen.js"></script>
+ 
+      <link rel="stylesheet" href="js/marker-cluster/MarkerCluster.css" />
+      <link rel="stylesheet" href="js/marker-cluster/MarkerCluster.Default.css" />
+      <script src="js/marker-cluster/leaflet.markercluster-src.js"></script>
+
+      <script src="js/leaflet-bookmark/dist/Leaflet.Bookmarks.min.js"></script>
+      <link type="text/css" rel="stylesheet" href="js/leaflet-bookmark/dist/leaflet.bookmarks.min.css" />
+
+      <script src="js/Leaflet.contextmenu-master/dist/leaflet.contextmenu.js"></script>
+      <link type="text/css" rel="stylesheet" href="js/Leaflet.contextmenu-master/dist/leaflet.contextmenu.css" />
+
+      <script src="js/jquery-1.11.1.min.js"></script>
+      
+      <script src="js/jquery.dataTables.min.js"></script>
+      <link type="text/css" rel="stylesheet" href="js/jquery.dataTables.css" />
+
+ 
+      <script src="js/search/leaflet-search.src.js"></script>
+      <link type="text/css" rel="stylesheet" href="js/search/leaflet-search.src.css" />
+      
+      <script type="text/javascript" src="js/Leaflet.Modal-master/dist/Leaflet.Modal.min.js"></script>
+      
+      <script src="js/d3.v3.min.js" charset="utf-8"></script>
+      <script src="js/c3-0.4.10/c3.min.js"></script>
+      <link href="js/c3-0.4.10/c3.css" rel="stylesheet" type="text/css">
+ 
+       <script src="js/svg.min.js"></script>  
+       <script type="text/javascript" src="js/dygraph-combined.js"></script>
+      <script type="text/javascript" class="init"> 
+        $(document).ready(function() {
+            $('#sched_table').DataTable();
+        } );    
+      </script> 
+
+
+<style>
+body {background-color: #F0F0F0;
+      left: 0;}
+h1 {margin-top: 120px;
+   font-size: 300%;
+   color: darkgrey;
+   margin-bottom: 100px;
+   float: right;
+   width: 38%;
+   font: 32px Arial, Helvetica, sans-serif;
+}
+h2 {margin-top: 60px;
+   font-size: 300%;
+   color: darkgrey;
+   margin-bottom: 50px;
+   float: right;
+   text-align: right;
+   width: 100%;
+   font: 32px Arial, Helvetica, sans-serif;
+}
+h3 {font: 18px Arial, Helvetica, sans-serif;
+    margin: 2px;
+    color: darkgrey;
+}
+#content {
+      width: 900px;
+      margin:0 auto;
+      }
+#colleft {
+  float: left;
+  width: 450px;
+  padding-top: 120px;
+}
+#colright {
+  float: right;
+  width: 450px;
+  padding-top: 20px;
+}
+.info {width: 180px;
+       z-index: -1;}
+#top {height: 100px;}
+#map {height: 500px; 
+      width: 100%;
+      position: relative;
+      }
+.info i {
+    margin-left: 40px;
+}
+#sched_table { font-size: 0.8em;
+                font-family: Arial, Helvetica, sans-serif;
+               color:dimgrey}
+pre {
+    white-space: pre-wrap;       /* CSS 3 */
+    white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+    white-space: -pre-wrap;      /* Opera 4-6 */
+    white-space: -o-pre-wrap;    /* Opera 7 */
+    word-wrap: break-word;       /* Internet Explorer 5.5+ */
+}
+.fat, .fat2 {
+  font-family: "Lucida Console", Monaco, monospace;
+  font-size: 1.5em;
+  color: lightgrey;
+  text-align: right;
+  padding: 4px;
+}
+.fat {
+  background-color: darkgrey;
+}
+.fat:hover, .fat2:hover {color: darkred;}
+
+#cats li {
+  list-style-type: none;
+  color: grey;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.9em;
+}
+#additional span {color:darkgrey; 
+    background-color:transparent; 
+    text-decoration:none;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 0.9em;
+}
+#additional a:link    {color:darkslategrey; background-color:transparent; text-decoration:underline}
+#additional a:visited {color:darkgrey; background-color:transparent; text-decoration:underline}
+
+.info {
+    padding: 6px 8px;
+    font: 14px/16px Arial, Helvetica, sans-serif;
+    background: white;
+    background: rgba(255,255,255,0.8);
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    border-radius: 5px;
+}
+.info h4 {
+    margin: 0 0 5px;
+    color: #777;
+}
+
+.legend {
+    line-height: 18px;
+    color: #555;
+}
+.legend i {
+    width: 18px;
+    height: 18px;
+    float: left;
+    margin-right: 8px;
+    opacity: 0.7;
+}
+
+.dygraph-label {
+    font-family: Arial, Helvetica, sans-serif;
+}
+.dygraph-legend {
+  background: transparent !important;
+}
+</style>
+
+
+</head>
+
+
+<body>
+<div id='top'>
+
+<h1>Victoria's Individual State Budget</h1>
+
+</div>
+<div id="map"></div>
+
+<script src="abs_sub.geojson"></script>
+    
+<!--[if gt IE 9]>
+<script src="geojson/regions.geojson"></script>
+<![endif]-->
+
+<!--[if lte IE 9]>
+<script src="geojson/regions_small.geojson"></script>
+<![endif]-->
+
+<![if !IE]>
+<script src="geojson/regions.geojson"></script>
+<![endif]>
+    
+    
+    
+    
+<script>
+
+function noncomplianceColor(d) {
+    return d === null ? 'grey' :
+            d > 50145  ? '#6E016B' :    
+            d > 33685  ? '#88419D' :
+           d > 26345  ? '#8C6BB1' :
+           d > 20230   ? '#8C96C6' :   
+           d > 13563  ? '#9EBCDA' :
+           d > 7468  ? '#BFD3E6' :
+           d > 3911   ? '#E0ECF4' :
+           d > 523   ? '#F7FCFD' :
+           d > 0   ? 'lightgrey' :
+                      'red';
+}
+
+
+function zoomToFeature(e) {
+		map.fitBounds(e.target.getBounds());
+	}
+
+function onEachFeature(feature, layer) {
+		layer.on({
+			click: zoomToFeature
+		});
+	}
+
+    
+var minimal = L.tileLayer.provider("CartoDB.Positron"),
+    aerial = L.tileLayer.provider("Esri.WorldImagery"),
+    landscape = L.tileLayer.provider("Thunderforest.Landscape");
+
+
+
+var regions = L.geoJson(region_data, {
+			style: function(feature) {
+				return {fillColor: noncomplianceColor(feature.properties.expenditure),
+                       weight: 0,
+					   fillOpacity: 0.6};
+			},
+			onEachFeature: function(feature, marker) {
+                marker.bindPopup('<h4>'+ feature.properties.SSC_NAME +'</h4><br>' + feature.properties.expenditure);
+                marker.on({click: zoomToFeature});
+			}
+      });
+    
+
+
+var map = new L.map('map', {layers: [minimal, regions],
+	                    fullscreenControl: true,
+        						  fullscreenControlOptions: {
+            							position: 'topleft'
+            						  },
+                        //contextmenu: true,
+                        //contextmenuItems: [{
+                          //text: 'Bookmark this position',
+                          //callback: function(evt) {
+                            //this.fire('bookmark:new', {
+                              //latlng: evt.latlng
+                            //});
+                          //}
+                        //}]
+        						  }).setView([-37.2, 144.9], 8);
+
+
+    
+var baseMaps = {
+    "Default": minimal,
+    "Aerial": aerial,
+    "Landscape": landscape
+  };
+var overlayMaps = {
+      "Regions": regions
+  };
+  
+L.control.scale().addTo(map);
+L.control.layers(baseMaps, overlayMaps).addTo(map);
+
+
+
+var compliance_legend = L.control({position: 'bottomright'});
+
+compliance_legend.onAdd = function (map) {
+
+    var div = L.DomUtil.create('div', 'info legend'),
+        grades = [523, 3911, 7468, 13563, 20230, 26345, 33685, 50145],
+        labels = [];
+ 
+    div.innerHTML += '<h3>Expenditure per Person</h3>';
+    div.innerHTML += '<br><i style="background:' + noncomplianceColor(0) + '"></i> 0<br>';
+    // loop through our density intervals and generate a label with a colored square for each interval
+    for (var i = 0; i < grades.length; i++) {
+        div.innerHTML +=
+            '<i style="background:' + noncomplianceColor(grades[i] + 1) + '"></i> ' +
+            grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
+    }
+    div.innerHTML += '<br><i style="background:' + noncomplianceColor(null) + '"></i> Null<br>'
+    div.innerHTML += '<br><small>Expenditure is calculated as the amount spent per-person for each suburb.</small>'
+    return div;
+};
+
+map.addControl(compliance_legend);
+    
+map.on('overlayadd', function (eventLayer) {
+    if (eventLayer.name === 'Schedule Categories') {
+        compliance_legend.addTo(this);
+        ind_legend.addTo(this);
+        sch_legend.addTo(this);
+    }
+    if (eventLayer.name === 'APS Audits 2013-2014' || eventLayer.name === 'APS Audits 2014-2015') {
+        if (!map.hasLayer(audits2014) || !map.hasLayer(audits2015)) {
+            audit_legend.addTo(this);
+        }
+    }
+});
+
+map.on('overlayremove', function (eventLayer) {
+    if (eventLayer.name === 'Schedule Categories') {
+        this.removeControl(compliance_legend);
+        this.removeControl(ind_legend);
+        this.removeControl(sch_legend);
+    } 
+    if (eventLayer.name === 'APS Audits 2013-2014' || eventLayer.name === 'APS Audits 2014-2015') {
+        if (!map.hasLayer(audits2014) || !map.hasLayer(audits2015)) {
+            this.removeControl(audit_legend);
+        }
+    }    
+});
+
+    
+    
+var searchControl = new L.Control.Search({layer: regions,
+                                          propertyName: 'SSC_NAME',
+                                          circleLocation:true});
+
+searchControl.on('search_locationfound', function(e) {
+
+    e.layer.setStyle({weight: 2,
+	                  color: 'red'});
+
+}).on('search_collapsed', function(e) {
+
+    featuresLayer.eachLayer(function(layer) {
+        featuresLayer.resetStyle(layer);
+    }); 
+});
+
+map.addControl(searchControl);
+    
+
+</script>
+
+
+
+
+<div id="content">
+
+	<div id="tax-intake">
+
+		<div id="colleft" style="height: 400px;">
+
+
+			<div id="per-person" style="height: 200px;"></div>
+
+			<script type="text/javascript">
+			  g = new Dygraph(
+
+				// containing div
+				document.getElementById("per-person"),
+
+				"Year,Taxation,Spending\n" +
+				"2000,1787,3252\n" +
+				"2001,1817,3521\n" +
+				"2002,1898,3373\n" +
+				"2003,2038,3973\n" +
+				"2004,2087,4169\n" +
+				"2005,2150,4613\n" +
+				"2006,2270,4852\n" +
+				"2007,2447,5093\n" +
+				"2008,2350,5308\n" +
+				"2009,2516,5723\n" +
+				"2010,2682,6282\n" +
+				"2011,2667,6397\n" +
+				"2012,2708,6903\n" +
+				"2013,2893,6446\n" +
+				"2014,3107,6657\n" +
+				"2015,3189,6894\n",
+				
+				{height: 200,
+				 width: 500,
+				 rightGap: 20,
+				 //labelsDiv: 'per-person-legend',
+				 //labelsSeparateLines: true,
+				 //hideOverlayOnMouseOut: false,
+				 legend: 'always',
+				 title: 'State Tax Revenue Vs Spending',
+				 ylabel: 'Dollars (A$) per Person',
+				 drawXGrid: false,
+				 gridLineColor: 'lightblue'}
+				
+			  );
+			</script>
+		</div>
+
+
+
+		<div id="colright">
+
+			<div id="spend"></div>
+				<script>
+
+				var draw = SVG("spend").size(600, 200)
+				var rect = draw.rect(500, 200).attr({ fill: "lightgrey" })
+
+				var num = draw.text("$6894").move(250, -20)
+				num.font({
+					family: "Impact, Charcoal, sans-serif"
+					, size: 180
+					, anchor: "middle"
+					, leading: 1
+				})
+
+				rect.clipWith(num)
+
+				var text = draw.text("State Spending per Person").move(80, 150)
+				text.font({
+					size: 24, 
+					anchor: "bottom", 
+					leading: 1,
+					fill: "darkgrey"
+				})
+
+				</script> 
+
+
+
+		<div id="tax"></div>
+				<script>
+
+				var draw = SVG("tax").size(600, 200)
+				var rect = draw.rect(500, 200).attr({ fill: "lightgrey" })
+
+				var num = draw.text("$3189").move(250, -20)
+				num.font({
+					family: "Impact, Charcoal, sans-serif"
+					, size: 180
+					, anchor: "middle"
+					, leading: 1
+				})
+
+				rect.clipWith(num)
+
+				var text = draw.text("State Tax per Person").move(80, 150)
+				text.font({
+					size: 24, 
+					anchor: "bottom", 
+					leading: 1,
+					fill: "darkgrey"
+				})
+
+				</script> 
+
+
+
+
+		</div>
+	</div>
+
+	<div style="clear: both; width: 100%; display: inline-block;">
+		<div style="display: inline-block;">
+			<h2>Source of State Government Revenue</h2>
+		</div>
+		<div id="revenue" style="height: 300px;"></div>
+
+			<script type="text/javascript">
+			  g = new Dygraph(
+
+				// containing div
+				document.getElementById("revenue"),
+
+				"Year,Payroll tax,Land transfer duty,Gambling taxes,Insurance taxes,Motor vehicle taxes,Land tax,Fire services property levy,Other taxes\n" +
+				"1996,548,264,274,76,175,100,0,535\n" +
+				"1997,528,221,298,115,191,73,0,502\n" +
+				"1998,471,222,311,117,197,77,0,614\n" +
+				"1999,504,280,329,125,198,82,0,584\n" +
+				"2000,535,273,271,136,206,106,0,284\n" +
+				"2001,535,394,286,154,217,107,0,136\n" +
+				"2002,538,435,272,173,207,134,0,140\n" +
+				"2003,548,494,267,192,226,151,0,149\n" +
+				"2004,605,464,272,198,242,168,0,118\n" +
+				"2005,645,522,285,204,242,152,0,74\n" +
+				"2006,668,569,289,210,246,190,0,74\n" +
+				"2007,727,700,301,218,254,163,0,66\n" +
+				"2008,740,521,306,229,246,230,0,74\n" +
+				"2009,743,660,299,257,263,215,0,79\n" +
+				"2010,785,705,298,262,271,252,0,105\n" +
+				"2011,834,587,307,293,282,249,0,115\n" +
+				"2012,831,573,305,284,317,278,0,127\n" +
+				"2013,853,719,288,184,327,286,108,148\n" +
+				"2014,865,830,304,186,358,305,99,156\n" +
+				"2015,906,842,312,193,369,296,105,162\n" +
+				"2016,951,847,316,204,384,331,104,132\n" +
+				"2017,991,846,323,214,392,319,105,132\n" +
+				"2018,1033,845,326,226,400,356,106,135\n",
+				
+				{height: 300,
+				 width: 1000,
+				 rightGap: 20,
+				 fillGraph: true,
+				 stackedGraph: true,
+				 //labelsDiv: 'per-person-legend',
+				 //labelsSeparateLines: true,
+				 //hideOverlayOnMouseOut: false,
+				 legend: 'always',
+				 labelsDivWidth: 900,
+				 title: 'State Tax Revenue by Taxation Type',
+				 ylabel: 'Dollars (A$) per Person',
+				 drawXGrid: false,
+				 gridLineColor: 'lightblue',
+				 underlayCallback: function(canvas, area, g) {
+				  var bottom_left = g.toDomCoords(2016, 0);
+				  var top_right = g.toDomCoords(2018, +4000);
+
+				  var left = bottom_left[0];
+				  var right = top_right[0];
+
+				  canvas.fillStyle = "lightgrey";
+				  canvas.fillRect(left, area.y, right - left, area.h);
+				}
+				}
+				
+			  );
+			</script>
+
+	</div>
+</div>    
+   
+    
+    
+    
+</body>
+</html>
+
+
+
+
+

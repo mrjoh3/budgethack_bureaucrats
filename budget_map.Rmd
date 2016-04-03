@@ -341,6 +341,10 @@ leaflet(abs.sub) %>%
               values=~expenditure)
 
 
+
+#abs.sub.json <- geojsonio::geojson_json(abs.sub)
+rgdal::writeOGR(abs.sub, dsn='abs_sub.geojson', "OGRGeoJSON", driver="GeoJSON")
+
 ```
 
 
@@ -409,6 +413,7 @@ dygraph(revenue[,-2], periodicity = 'Year') %>%
     dyLegend(width = 500, labelsSeparateLines=TRUE, show='always', labelsDiv='legend')
 
 
+
 ```
 
 
@@ -453,17 +458,27 @@ annual <- left_join(budget, ann.rev) %>%
     left_join(., ann.pop) %>%
     select(Year, Population, tax, budget) %>%
     melt(., c('Year','Population')) %>%
-    mutate(per.person = value / Population)
+    mutate(per.person = as.integer(value / Population))
 
 ggplot(annual, aes(x=Year, y=per.person, colour=variable)) + 
     geom_line() +
     scale_y_continuous(labels=dollar)
 
-
+to.dygraph <- dcast(annual, Year~variable, value.var = 'per.person')
+write.csv(to.dygraph, 'perperson.dygraph.csv', row.names = FALSE)
 ```
 
 
 
 
+```{r}
 
+# merge populatio to get tax types per person
+rev.dygraph <- left_join(revenue, ann.pop) %>%
+    select(-`Total taxation`, -Population)
+    mutate_each(funs(per.person = . / predicted),
+                    names(.)[2:9])
+
+
+```
 
