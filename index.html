@@ -77,6 +77,7 @@ h3 {font: 18px Arial, Helvetica, sans-serif;
 #content {
       width: 900px;
       margin:0 auto;
+      padding-bottom: 250px;
       }
 #colleft {
   float: left;
@@ -90,7 +91,9 @@ h3 {font: 18px Arial, Helvetica, sans-serif;
 }
 .info {width: 180px;
        z-index: -1;}
-#top {height: 100px;}
+#top {height: 250px;
+      width: 900px;
+      margin:0 auto;}
 #map {height: 500px; 
       width: 100%;
       position: relative;
@@ -175,26 +178,43 @@ pre {
 <body>
 <div id='top'>
 
-<h1>Victoria's Individual State Budget</h1>
 
+
+			<div id="title"></div>
+				<script>
+
+				var draw = SVG("title").size(1000, 250)
+				var rect = draw.rect(1000, 250).attr({ fill: "lightgrey" })
+
+				var num = draw.text("1 Budget").move(350, 20)
+				num.font({
+					family: "Impact, Charcoal, sans-serif"
+					, size: 180
+					, anchor: "middle"
+					, leading: 1
+				})
+
+				rect.clipWith(num)
+
+				var text = draw.text("Victoria State Budget 2015-2016").move(350, 55)
+				text.font({
+					size: 24, 
+					anchor: "bottom", 
+					leading: 1,
+					fill: "darkgrey"
+				})
+
+				</script>     
+    
+    
+    
+    
 </div>
 <div id="map"></div>
 
 <script src="abs_sub.geojson"></script>
     
-<!--[if gt IE 9]>
-<script src="geojson/regions.geojson"></script>
-<![endif]-->
-
-<!--[if lte IE 9]>
-<script src="geojson/regions_small.geojson"></script>
-<![endif]-->
-
-<![if !IE]>
-<script src="geojson/regions.geojson"></script>
-<![endif]>
-    
-    
+   
     
     
 <script>
@@ -355,7 +375,10 @@ map.addControl(searchControl);
 <div id="content">
 
 	<div id="tax-intake">
-
+        <div style="display: inline-block;">
+            <h2>State Tax Revenue Vs Spending</h2>
+        </div>
+        
 		<div id="colleft" style="height: 400px;">
 
 
@@ -392,7 +415,7 @@ map.addControl(searchControl);
 				 //labelsSeparateLines: true,
 				 //hideOverlayOnMouseOut: false,
 				 legend: 'always',
-				 title: 'State Tax Revenue Vs Spending',
+				 //title: 'State Tax Revenue Vs Spending',
 				 ylabel: 'Dollars (A$) per Person',
 				 drawXGrid: false,
 				 gridLineColor: 'lightblue'}
@@ -503,7 +526,7 @@ map.addControl(searchControl);
 				"2018,1033,845,326,226,400,356,106,135\n",
 				
 				{height: 300,
-				 width: 1000,
+				 width: 900,
 				 rightGap: 20,
 				 fillGraph: true,
 				 stackedGraph: true,
@@ -511,8 +534,8 @@ map.addControl(searchControl);
 				 //labelsSeparateLines: true,
 				 //hideOverlayOnMouseOut: false,
 				 legend: 'always',
-				 labelsDivWidth: 900,
-				 title: 'State Tax Revenue by Taxation Type',
+				 labelsDivWidth: 500,
+				 //title: 'State Tax Revenue by Taxation Type',
 				 ylabel: 'Dollars (A$) per Person',
 				 drawXGrid: false,
 				 gridLineColor: 'lightblue',
