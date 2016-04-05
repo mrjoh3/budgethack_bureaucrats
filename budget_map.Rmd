@@ -475,9 +475,10 @@ write.csv(to.dygraph, 'perperson.dygraph.csv', row.names = FALSE)
 
 # merge populatio to get tax types per person
 rev.dygraph <- left_join(revenue, ann.pop) %>%
-    select(-`Total taxation`, -Population)
-    mutate_each(funs(per.person = . / predicted),
-                    names(.)[2:9])
+    select(-`Total taxation`, -Population) %>%
+    mutate_each(funs(per.person = as.integer((. * 1e6) / predicted)), -Year, -predicted)
+
+write.csv(rev.dygraph[,-grep('predicted',names(rev.dygraph))], 'revenue-dygraph.csv', row.names = FALSE)
 
 
 ```
