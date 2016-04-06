@@ -60,9 +60,9 @@ h3 {font: 18px Arial, Helvetica, sans-serif;
     color: darkgrey;
 }
 
-a {font: 12px Arial, Helvetica, sans-serif;}
-a:link    {color:darkslategrey; background-color:transparent; text-decoration:underline}
-a:visited {color:darkgrey; background-color:transparent; text-decoration:underline}
+#sources a {font: 12px Arial, Helvetica, sans-serif;}
+#sources a:link    {color:darkslategrey; background-color:transparent; text-decoration:underline}
+#sources a:visited {color:darkgrey; background-color:transparent; text-decoration:underline}
 
 #content {
       width: 900px;
@@ -197,6 +197,8 @@ pre {
 var regions,
     total,
     population;
+
+var active_layer = 'spending'
     
 function getColor(d) {
     return d === null ? 'grey' :
@@ -278,9 +280,16 @@ function highlightFeature(e) {
     info.update(layer.feature.properties);
 }
 function resetHighlight(e) {
-    regions.resetStyle(e.target);
-    total.resetStyle(e.target);
-    population.resetStyle(e.target);
+    //console.log(e.target)
+	if (active_layer === 'spending') {
+		regions.resetStyle(e.target);
+	}
+	if (active_layer === 'total') {
+		total.resetStyle(e.target);
+	}
+	if (active_layer === 'population') {
+		population.resetStyle(e.target);
+	}
     info.update();
 }
 function onEachFeature(feature, layer) {
@@ -300,7 +309,7 @@ regions = L.geoJson(region_data, {
 			onEachFeature: onEachFeature
       });
 total = L.geoJson(region_data, {
-			style: style,
+			style: totstyle,
 			onEachFeature: onEachFeature
       });
 population = L.geoJson(region_data, {
@@ -448,12 +457,15 @@ totlegend.onAdd = function (map) {
 map.on('overlayadd', function (eventLayer) {
     if (eventLayer.name === "Spending / Person") {
         legend.addTo(this);
+		active_layer = 'spending';
     }
     if (eventLayer.name === "Total Spending") {
         totlegend.addTo(this);
+		active_layer = 'total';
     }
     if (eventLayer.name === "Population") {
         poplegend.addTo(this);
+		active_layer = 'population';
     }
 });
 
@@ -6206,7 +6218,7 @@ map.addControl(searchControl);
     </div>
     
 	
-	        <div style="clear: both; width: 100%; display: inline-block;">
+	        <div id='sources' style="clear: both; width: 100%; display: inline-block;">
     
     <div style="display: inline-block;">
 			<h2>Data Sources</h2>
