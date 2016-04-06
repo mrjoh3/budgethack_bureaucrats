@@ -2,23 +2,16 @@
 
 #### Bureaucrats Team
 
-
-This file is supposed to describe the project, but we can also use it to propose ideas and / or soluions to problems. Just in case, this is a markdown file so it uses a very simple syntax to format to HTML.
-
-
-## ToDo
-
-Local Government Area
-Line graph for tax intake over time by Vic government
-
-ABS data for Victoria population
-Socio economic disadvantage indicator
-
-Population by LGA for the map.
-Income by LGA
+The files in this repository belong to two aspects of the project. First there is the data processing files and second the final webpage. Both should work as they are once the repository is downloaded. I will make sure everything is fixed and ready to go within the next couple of days.
 
 
-## Ideas
+## Data Processing
 
-1. for the plot at the bottom we can compare budget outlays per person per year with tax intake per person per year. This would be interesting because if the lines ever cross it indicates a possible transition from surplus to deficit (or vice versa). I will look for an example or mock one up. -- MJ
+Dataprocessing was all done using R and Rmarkdown. This was used to both clean data, prototype the final website and create the data structures needed for the final product.
+
+
+## The Website
+
+The website should run in your browser with only the `index.html` and `abs_sub.geojson` files along with the unzipped js folder from `js_libraries.zip` archive all in the same directory.
+
 
