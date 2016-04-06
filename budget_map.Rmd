@@ -106,6 +106,8 @@ data <- read_excel('data/2015-16-State-Capital-Program.xlsx', skip=3, sheet='BP4
            vlen = length(vsplit)) %>%
     filter(vlen > 1)
 
+tbl <- select(data, `Project Name`, Department, `New / Existing / Completed`, `Total Estimated Investment`)
+write(kable(tbl, 'html'), 'out_table.txt')
 # vlen > 1 removes 
 # `Project Name` != "All remaining projects with a TEI less than $1 million",
 # `Project Name` != "All projects with a TEI less than $1 million",
@@ -300,7 +302,32 @@ ggplot(ssc.pop, aes(x=score, y=expenditure)) +
     ggtitle('Expenditure per Person for each Suburb by Socio-Economic Score') +
     scale_y_continuous(labels=dollar)
 
+gm = filter(ssc.pop, GCCSA_NAME_2011 == 'Greater Melbourne')
+reg = filter(ssc.pop, GCCSA_NAME_2011 == 'Rest of Vic.')
+
 ```
+
+### Regional Data
+
+#### x axis
+
+`r paste(round(reg$score,2), collapse = ',')`
+
+#### y axis
+
+`r paste(round(reg$expenditure,2), collapse = ',')`
+
+
+### Greater Melbourne
+
+#### x axis
+
+`r paste(round(gm$score,2), collapse = ',')`
+
+#### y axis
+
+`r paste(round(gm$expenditure,2), collapse = ',')`
+
 
 ## Merge with Spatial Data
 
