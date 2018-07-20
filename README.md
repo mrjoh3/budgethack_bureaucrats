@@ -12,6 +12,6 @@ Dataprocessing was all done using R and Rmarkdown. This was used to both clean d
 
 ## The Website
 
-The website should run in your browser with only the `index.html` and `abs_sub.geojson` files along with the unzipped js folder from `js_libraries.zip` archive all in the same directory.
+The website should run in your browser with only the `index.html` and `abs_sub.geojson` files along with the js folder all in the same directory.
 
 

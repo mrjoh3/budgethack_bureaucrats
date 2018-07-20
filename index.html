@@ -1,32 +1,38 @@
 <!doctype HTML>
-<meta charset = 'utf-8'>
-<meta http-equiv="X-UA-Compatible" content="IE=edge" />
 
 <html>
   <head>
-      <link rel='stylesheet' href='js/leaflet/leaflet.css'>
-      <link rel='stylesheet' href='js/leaflet/leaflet.label.css'>
-      
-      <script src='js/leaflet/leaflet.js' type='text/javascript'></script>
-<!--      <script src="http://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.js"></script>-->
-      <script src='js/leaflet/leaflet-providers.js' type='text/javascript'></script>
-      <script src='js/leaflet/leaflet.label.js' type='text/javascript'></script>
-    
-      <link rel="stylesheet" href="js/fullscreen/Control.FullScreen.css" />
-      <script src="js/fullscreen/Control.FullScreen.js"></script>
- 
-      <script src="js/jquery-1.11.1.min.js"></script>
-      <script src="js/jquery.dataTables.min.js"></script>
-      <link type="text/css" rel="stylesheet" href="js/jquery.dataTables.css" />
+  
+		<meta charset = 'utf-8'>
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<meta name="keywords" content="BudgetHack,Victoria,budget,spending,open data">
+		<meta name="title" content="Bling My Suburb">
+		<meta name="author" content="The Bureaucrats">
 
-      <script src="js/search/leaflet-search.src.js"></script>
-      <link type="text/css" rel="stylesheet" href="js/search/leaflet-search.src.css" />
+
+      <link rel='stylesheet' href='https://cdn.rawgit.com/mrjoh3/mrjoh3.github.io/master/js/leaflet/leaflet.css'>
+      <link rel='stylesheet' href='https://cdn.rawgit.com/mrjoh3/mrjoh3.github.io/master/js/leaflet/leaflet.label.css'>
       
-      <script src="js/d3.v3.min.js" charset="utf-8"></script>
-            <script src="js/c3-0.4.10/c3.min.js"></script>
-      <link href="js/c3-0.4.10/c3.css" rel="stylesheet" type="text/css">
-       <script src="js/svg.min.js"></script>  
-       <script type="text/javascript" src="js/dygraph-combined.js"></script>
+      <script src='https://cdn.rawgit.com/mrjoh3/mrjoh3.github.io/master/js/leaflet/leaflet.js' type='text/javascript'></script>
+
+      <script src='https://cdn.rawgit.com/mrjoh3/mrjoh3.github.io/master/js/leaflet/leaflet-providers.js' type='text/javascript'></script>
+      <script src='https://cdn.rawgit.com/mrjoh3/mrjoh3.github.io/master/js/leaflet/leaflet.label.js' type='text/javascript'></script>
+    
+      <link rel="stylesheet" href="https://cdn.rawgit.com/mrjoh3/mrjoh3.github.io/master/js/fullscreen/Control.FullScreen.css" />
+      <script src="https://cdn.rawgit.com/mrjoh3/mrjoh3.github.io/master/js/fullscreen/Control.FullScreen.js"></script>
+ 
+      <script src="https://cdn.rawgit.com/mrjoh3/mrjoh3.github.io/master/js/jquery-1.11.1.min.js"></script>
+      <script src="https://cdn.rawgit.com/mrjoh3/mrjoh3.github.io/master/js/jquery.dataTables.min.js"></script>
+      <link type="text/css" rel="stylesheet" href="https://cdn.rawgit.com/mrjoh3/mrjoh3.github.io/master/js/jquery.dataTables.css" />
+
+      <script src="https://cdn.rawgit.com/mrjoh3/mrjoh3.github.io/master/js/search/leaflet-search.src.js"></script>
+      <link type="text/css" rel="stylesheet" href="https://cdn.rawgit.com/mrjoh3/mrjoh3.github.io/master/js/search/leaflet-search.src.css" />
+      
+      <script src="https://cdn.rawgit.com/mrjoh3/mrjoh3.github.io/master/js/d3.v3.min.js" charset="utf-8"></script>
+            <script src="https://cdn.rawgit.com/mrjoh3/mrjoh3.github.io/master/js/c3.min.js"></script>
+      <link href="https://cdn.rawgit.com/mrjoh3/mrjoh3.github.io/master/js/c3.css" rel="stylesheet" type="text/css">
+       <script src="https://cdn.rawgit.com/mrjoh3/mrjoh3.github.io/master/js/svg.min.js"></script>  
+       <script type="text/javascript" src="https://cdn.rawgit.com/mrjoh3/mrjoh3.github.io/master/js/dygraph-combined.js"></script>
       
       <script type="text/javascript" class="init"> 
         $(document).ready(function() {
@@ -49,7 +55,7 @@ h1 {margin-top: 120px;
 h2 {margin-top: 60px;
    font-size: 300%;
    color: darkgrey;
-   margin-bottom: 50px;
+   margin-bottom: 20px;
    float: right;
    text-align: right;
    width: 100%;
@@ -60,10 +66,15 @@ h3 {font: 18px Arial, Helvetica, sans-serif;
     color: darkgrey;
 }
 
-#sources a {font: 12px Arial, Helvetica, sans-serif;}
+#sources a, p {font: 12px Arial, Helvetica, sans-serif;}
 #sources a:link    {color:darkslategrey; background-color:transparent; text-decoration:underline}
 #sources a:visited {color:darkgrey; background-color:transparent; text-decoration:underline}
 
+.note {
+    font: 12px Arial, Helvetica, sans-serif;
+    color: darkgrey
+    }
+    
 #content {
       width: 900px;
       margin:0 auto;
@@ -161,17 +172,17 @@ pre {
 				var draw = SVG("title").size(1000, 250)
 				var rect = draw.rect(1000, 250).attr({ fill: "lightgrey" })
 
-				var num = draw.text("1 Budget").move(350, 20)
+				var num = draw.text("Bling My Suburb").move(500, 20)
 				num.font({
-					family: "Impact, Charcoal, sans-serif"
-					, size: 180
+					family: "Impact, Charcoal, sans-serif, narrow"
+					, size: 150
 					, anchor: "middle"
 					, leading: 1
 				})
 
 				rect.clipWith(num)
 
-				var text = draw.text("Victoria State Budget 2015-2016 for Individuals").move(150, 185)
+				var text = draw.text("Victoria State Budget 2015-2016 for Individuals").move(50, 162)
 				text.font({
 					size: 24, 
 					anchor: "bottom", 
@@ -187,10 +198,22 @@ pre {
 </div>
 <div id="map"></div>
 
-<script src="abs_sub.geojson"></script>
     
-   
+<!--[if IE]>
+    <script src="abs_sub_simple2.geojson"></script>
+        <div>
+            <small class='note'>
+                *In Internet Explorer map data is of lower resolution and very slow to load
+            </small>
+        </div>
+<![endif]-->
+
+
+<![if !IE]>
+    <script src="abs_sub_simple.geojson"></script>
+<![endif]>   
     
+ 
     
 <script>
 
@@ -773,13 +796,13 @@ map.addControl(searchControl);
    <td style="text-align:left;"> Maintaining ocean access for Gippsland Lakes (Lakes Entrance) (d) </td>
    <td style="text-align:left;"> Department of Economic Development Jobs Transport and Resources </td>
    <td style="text-align:left;"> New </td>
-   <td style="text-align:left;"> tbc </td>
+   <td style="text-align:left;"> 0 </td>
   </tr>
   <tr>
    <td style="text-align:left;"> Melbourne Exhibition Centre – stage 2 development (Southbank) (e) </td>
    <td style="text-align:left;"> Department of Economic Development Jobs Transport and Resources </td>
    <td style="text-align:left;"> New </td>
-   <td style="text-align:left;"> tbc </td>
+   <td style="text-align:left;"> 0 </td>
   </tr>
   <tr>
    <td style="text-align:left;"> M80 Upgrade – EJ Whitten Bridge to Sunshine Avenue (Sunshine North) </td>
@@ -1667,7 +1690,7 @@ map.addControl(searchControl);
    <td style="text-align:left;"> New schools public private partnership project (various) </td>
    <td style="text-align:left;"> Department of Education and Training </td>
    <td style="text-align:left;"> Existing </td>
-   <td style="text-align:left;"> ..  (a) </td>
+   <td style="text-align:left;"> 0 </td>
   </tr>
   <tr>
    <td style="text-align:left;"> Albert Park College – land acquisition and facility redevelopment (Albert Park) (c) </td>
@@ -6218,20 +6241,72 @@ map.addControl(searchControl);
     </div>
     
 	
-	        <div id='sources' style="clear: both; width: 100%; display: inline-block;">
+	<div id='sources' style="clear: both; width: 100%; display: inline-block;">
     
-    <div style="display: inline-block;">
-			<h2>Data Sources</h2>
-    </div>
+		<div style="display: inline-block;">
+				<h2>Data Sources</h2>
+		</div>
+		
+			<ul>
+			<li><a href='http://www.dtf.vic.gov.au/files/c30ad6e4-ffee-4e45-9319-a48b00a3dfea/2015-16-State-Capital-Program.xlsx'>Department Tresury and Finance (Victoria State Capital Program)</a></li>
+			<li><a href='http://www.dtf.vic.gov.au/files/d82758ff-f6f7-4ab5-953b-a48b00a6b392/TaxationRevenueGG.xlsx'>Department Tresury and Finance (Victoria State Taxation Revenue)</a></li>
+			<li><a href="https://openaus.net.au/state/vic/index.php">OpenAus Data (Victoria State Budget)</a></li>
+			<li><a href='http://www.abs.gov.au/AUSSTATS/subscriber.nsf/log?openagent&1270055003_ssc_2011_aust_shape.zip&1270.0.55.003&Data%20Cubes&D68DFFC14D31F4E1CA2578D40013268D&0&July%202011&22.07.2011&Previous'>Australian Bureau of Statistics (Suburbs Spatial Data)</a></li>
+			<li><a href='http://www.abs.gov.au/AUSSTATS/subscriber.nsf/log?openagent&2033.0.55.001%20ssc%20indexes.xls&2033.0.55.001&Data%20Cubes&F40D0630B245D5DCCA257B43000EA0F1&0&2011&05.04.2013&Latest'>Australian Bureau of Statistics (State Suburb Population and SEIFA)</a></li>
+			</ul>
+		
 	
-	<ul>
-	<li><a href='http://www.dtf.vic.gov.au/files/c30ad6e4-ffee-4e45-9319-a48b00a3dfea/2015-16-State-Capital-Program.xlsx'>Department Tresury and Finance (Victoria State Capital Program)</a></li>
-	<li><a href='http://www.dtf.vic.gov.au/files/d82758ff-f6f7-4ab5-953b-a48b00a6b392/TaxationRevenueGG.xlsx'>Department Tresury and Finance (Victoria State Taxation Revenue)</a></li>
-	<li><a href="https://openaus.net.au/state/vic/index.php">OpenAus Data (Victoria State Budget)</a></li>
-	<li><a href='http://www.abs.gov.au/AUSSTATS/subscriber.nsf/log?openagent&1270055003_ssc_2011_aust_shape.zip&1270.0.55.003&Data%20Cubes&D68DFFC14D31F4E1CA2578D40013268D&0&July%202011&22.07.2011&Previous'>Australian Bureau of Statistics (Suburbs Spatial Data)</a></li>
-	<li><a href='http://www.abs.gov.au/AUSSTATS/subscriber.nsf/log?openagent&2033.0.55.001%20ssc%20indexes.xls&2033.0.55.001&Data%20Cubes&F40D0630B245D5DCCA257B43000EA0F1&0&2011&05.04.2013&Latest'>Australian Bureau of Statistics (State Suburb Population and SEIFA)</a></li>
-	</ul>
+		<div style="display: inline-block;">
+				<h2>Media Links</h2>
+		</div>
 	
+			<ul>
+			<li><a href='https://www.premier.vic.gov.au/victoria-hosts-first-of-a-kind-budget-hack/'>Minister for Small Business, Innovation and Trade (Press Release)</a></li>
+			<li><a href='http://www.theaustralian.com.au/business/technology/victoria-hosts-first-budget-hack/news-story/10b2952a8233708fe7293e2ed088d4cb'>The Australian</a></li>
+			<li><a href='http://www.themandarin.com.au/62827-bling-budget-victorias-first-budget-hack/?pgnc=1&pgnc=1'>The Mandarin</a></li>
+			<li><a href='http://www.theage.com.au/victoria/melbourne-express-thursday-april-7-2016-20160406-go03u1.html#post_live_1007782527'>The Age</a></li>
+			<li><a href='http://www.codeforaustralia.org/blog/what-happened-at-budgethack'>Code for Australia</a></li>
+			<li><a href='http://www.startupsmart.com.au/news-analysis/victoria-launches-hackathon-to-decode-the-budget/'>StartupSmart</a></li>
+			
+			
+			</ul>
+ 
+		<div style="display: inline-block;">
+				<h2>Contacts</h2>
+		</div>
+            <p>This site was built by the BudgetHack team; The Bureaucrats. Sourcecode for the project can be found <a href='https://github.com/mrjoh3/mrjoh3.github.io'>here</a>, enquires can be made via <a href="mailto:mrjoh3@gmail.com?Subject=Bling%20My%20Suburb%20enquiry">email</a> </p>
+		<div style="display: inline-block;">
+				<h2>Comments</h2>
+		</div>
+		
+			<div id="disqus_thread"></div>
+			<script>
+			/**
+			* RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+			* LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+			*/
+			//var disqus_developer = 1; // Comment out when the site is live
+			//var disqus_config = function () {
+			//this.page.url = '//mrjoh3.github.io/'; // Replace PAGE_URL with your page's canonical URL variable
+			//this.page.identifier = 'blingmysuburb'; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+			//};
+			
+			(function() { // DON'T EDIT BELOW THIS LINE
+			var d = document, s = d.createElement('script');
+
+			s.src = '//blingmysuburb.disqus.com/embed.js';
+
+			s.setAttribute('data-timestamp', +new Date());
+			(d.head || d.body).appendChild(s);
+			})();
+			</script>
+			<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+
+
+
+
+
 	
 	</div>
 	
@@ -6240,7 +6315,7 @@ map.addControl(searchControl);
 </div>    
    
     
-    
+    <script id="dsq-count-scr" src="//blingmysuburb.disqus.com/count.js" async></script> 
     
 </body>
 </html>

@@ -1,8 +1,10 @@
 ---
-title: "budget paper"
+title: "BudgetHack Data Processing - The Bureaucrats"
 author: "mj"
 date: "23 March 2016"
-output: html_document
+output: 
+  html_document:
+    toc: true
 ---
 
 <style>
@@ -27,24 +29,12 @@ width: 30%;
 ```{r setup, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE}
 
 library(knitr)
-
-opts_chunk$set(cache=FALSE, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, fig.width=9, fig.height=4)
-```
-
-## Step One - Import Data
-
-Here we import the Victoria spatial data for suburbs and the expentiture dataset. Once completed this will give a value per suburb in a format that can be mapped. The expenditure dataset is a bit horible to get location names out of and there are a mix of suburb names, LGA names, regions and a mixof other spatial scales. Cleaning this is endless and I have to draw the line and move on.
-
-```{r libraries}
-
 library(readxl)
 library(readr)
 library(stringr)
 library(plyr)
 library(dplyr)
 library(tidyr)
-library(stringr)
-library(stringi)
 library(rgeos)
 library(leaflet)
 library(jsonlite)
@@ -54,26 +44,27 @@ library(dygraphs)
 library(reshape2)
 library(scales)
 
-#setwd('C:/WORK/budgethack_bureaucrats')
+opts_chunk$set(cache=FALSE, echo=TRUE, warning=FALSE, message=FALSE, error=FALSE, fig.width=9, fig.height=4)
+```
 
-# import suburbs geojson
-# geojson <- readLines("data/vic_suburbs_simple3.geojson", warn = FALSE, encoding = 'ASCII') %>%
-#   paste(collapse = "\n") %>%
-#   fromJSON(simplifyVector = FALSE)
-# 
-# # Gather GDP estimate from all countries
-# geojson.names <- sapply(geojson$features, function(feat) {
-#   feat$properties$vic_loca_2
-# })
+## Import Data
+
+Here we import the Victoria spatial data for suburbs and the expenditure dataset. Once completed this will give a value per suburb in a format that can be mapped. The expenditure dataset is a bit horrible to get location names out of and there are a mix of suburb names, LGA names, regions and a mix of other spatial scales. Cleaning this is endless and I have to draw the line and move on.
 
 
+### Suburb Data
+
+```{r suburbs}
+
+# spatial data
 abs.suburbs <- rgdal::readOGR('mapping', layer='SSC_simple')
-#vic <- abs.sub[abs.sub$STE_NAME11 == "Victoria",]
 
 # clean list of ABS suburb names and hierarchy
 ssc.csv <- read_csv('mapping/SSC_2011_AUST.csv') %>%
     mutate(state = str_sub(SA1_MAINCODE_2011, 1,1)) %>%
     filter(state == '2')
+
+# SA1 gives us the hierarchy of nested regions
 sa1.csv <- read_csv('mapping/SA1_2011_AUST.csv')
 
 ssc <- left_join(ssc.csv, sa1.csv) %>%
@@ -87,7 +78,8 @@ ssc <- left_join(ssc.csv, sa1.csv) %>%
     distinct(SSC_CODE_2011) %>%
     rename(SSC_CODE = SSC_CODE_2011)
 
-rm(ssc.csv, sa1.csv)
+rm(ssc.csv, sa1.csv) # these are too large to leave in memory
+
 
 suburb.names <- ssc$SSC_NAME_2011
 
@@ -95,9 +87,14 @@ suburb.names <- ssc$SSC_NAME_2011
 abs.sub <- abs.suburbs[abs.suburbs$SSC_CODE %in% ssc$SSC_CODE, ]
 rm(abs.suburbs)
 
-#abs.sub@data <- merge(abs.sub@data, ssc)
+```
 
-# import budget data
+
+### Budget Data
+
+```{r budget}
+
+# import budget data (projects/spending)
 data <- read_excel('data/2015-16-State-Capital-Program.xlsx', skip=3, sheet='BP4') %>%
     filter(`New / Existing / Completed` != 'Completed',
            !grepl('All projects with a TEI less than $1 million', `Project Name`)) %>%
@@ -106,13 +103,17 @@ data <- read_excel('data/2015-16-State-Capital-Program.xlsx', skip=3, sheet='BP4
            vlen = length(vsplit)) %>%
     filter(vlen > 1)
 
-tbl <- select(data, `Project Name`, Department, `New / Existing / Completed`, `Total Estimated Investment`)
-write(kable(tbl, 'html'), 'out_table.txt')
 # vlen > 1 removes 
 # `Project Name` != "All remaining projects with a TEI less than $1 million",
 # `Project Name` != "All projects with a TEI less than $1 million",
 # `Project Name` != "Enterprise resource planning new business system implementation"
 
+# Select columns and Write project data to html file to copy to final webpage 
+tbl <- select(data, `Project Name`, Department, `New / Existing / Completed`, `Total Estimated Investment`)
+write(kable(tbl, 'html'), 'out_table.txt')
+
+
+# separate location data out into single column, trying to catch errors and variation here
 data$location <- sapply(data$vsplit, function(r) {
                                             vals = grep('^[[:upper:]]|metro various|various|statewide', r)
                                             val = r[vals[vals>1]]
@@ -132,7 +133,7 @@ data$location <- sapply(data$vsplit, function(r) {
                                             }
                                             )
 
-# final suburb split on ',|/|and'
+
 ```
 
 
@@ -162,7 +163,8 @@ df <- data %>%
 
 Some suburb names needed to be modified so that the Expenditure dataset and Suburbs spatial data would match. The plot below indicates the locations that have not been allocated to a suburb. 
 
-```{r suburbs}
+
+```{r names}
 # fix suburb names
 #                                         FROM                     TO
 rename.suburbs <- data.frame(rbind(
@@ -196,6 +198,7 @@ df.suburbs <- filter(df, subs %in% suburb.names) %>%
     group_by(subs) %>%
     summarise(value = sum(value, na.rm=TRUE))
 
+# filter out location data/names that do not match  
 df.other <- filter(df, 
                    !(subs %in% suburb.names),
                    !(subs %in% c('STATEWIDE',
@@ -218,6 +221,24 @@ df.other <- filter(df,
     group_by(subs) %>%
     summarise(value = sum(value, na.rm=TRUE))
 
+ggplot(df.other, aes(x=subs, y=value)) +
+    geom_bar(stat='identity') +
+    coord_flip() +
+    ggtitle('Location Expenditure not matched to a Suburb') +
+    xlab('Locations') + ylab('Expenditure A$') +
+    scale_y_continuous(labels=dollar)
+
+```
+
+
+As the expenditure dataset contained spending at multiple spatial scales the higher order groupings needed to be isolated and the expenditure spread across the nested suburbs. As there was no clear pattern to this and the spatial hierarchy was not clearly defined this process is essentially manual. 
+
+Higher order spatial groupings included regional, metropolitan and local government areas as well as other spatial groupings.
+
+
+```{r expenditure}
+
+# Calculate per suburb spending for each identified higher order spatial group
 statewide.value <- filter(df, subs == 'STATEWIDE')$value / length(suburb.names)
 metro.value <- sum(filter(df, subs == 'METRO VARIOUS')$value) / nrow(filter(ssc, GCCSA_NAME_2011 == 'Greater Melbourne'))
 regional.rural.value <- sum(filter(df, subs %in% c('NON-METRO VARIOUS', 'RURAL VARIOUS'))$value) / nrow(filter(ssc, GCCSA_NAME_2011 == "Rest of Vic."))
@@ -256,26 +277,17 @@ ssc.vals <- left_join(ssc, select(df.suburbs, SSC_NAME_2011 = subs, value)) %>%
            value = ifelse(grepl('Phillip Island', ssc$SA2_NAME_2011, TRUE), value + phillip.island.value, value),
            value = ifelse(grepl('Port Phillip', ssc$SA3_NAME_2011, TRUE), value + pt.phillip.value, value))
     
-    
-ggplot(df.other, aes(x=subs, y=value)) +
-    geom_bar(stat='identity') +
-    coord_flip() +
-    ggtitle('Location Expenditure not matched to a Suburb') +
-    xlab('Locations') + ylab('Expenditure A$') +
-    scale_y_continuous(labels=dollar)
 
 ```
 
 
 # Import Population Data
 
-The population data is needed to calculate the expenditure per person for each Suburb. Again there is a problem with matching the location data. The State based Suburb data is not compatible with the ABS based population data. The ABS data contains roughly half the number of suburbs and so cannot be directly linked.
+The population data is needed to calculate the expenditure per person for each Suburb. Again there is a problem with matching the location data. The State based Suburb data is not compatible with the ABS based population data. The ABS data contains roughly half the number of suburbs and so cannot be directly linked. To avoid this problem the ABS defined suburbs (SSC) were used 
 
 
 ```{r population, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 
-#pop <- readOGR('mapping/doc.kml', '2011 IRSD - SSC')
-#pop <- readOGR('mapping', 'SOS_2011_AUST')
 population <- read_excel('data/2033.0.55.001 ssc indexes.xls',
                   sheet = "Table 2",
                   skip = 5)[, c(1,3,4,8)]
@@ -289,7 +301,7 @@ pop <- filter(population, state == 'VIC')
 
 ## Merge Suburb and Population Data
 
-Merge is made on the ABS suburb ID
+Merge is made on the ABS suburb ID. 
 
 ```{r}
 
@@ -309,32 +321,39 @@ reg = filter(ssc.pop, GCCSA_NAME_2011 == 'Rest of Vic.')
 
 ### Regional Data
 
+The plot of expenditure vs socio-economic advantage/disadvantage is made using the javascript plotting library C3. The values used for the plots are created here with the first 100 shown. 
+
 #### x axis
 
-`r paste(round(reg$score,2), collapse = ',')`
+`r head(paste(round(reg$score,2), collapse = ','), 100)`
 
 #### y axis
 
-`r paste(round(reg$expenditure,2), collapse = ',')`
+`r head(paste(round(reg$expenditure,2), collapse = ','), 100)`
 
 
 ### Greater Melbourne
 
 #### x axis
 
-`r paste(round(gm$score,2), collapse = ',')`
+`r head(paste(round(gm$score,2), collapse = ','), 100)`
 
 #### y axis
 
-`r paste(round(gm$expenditure,2), collapse = ',')`
+`r head(paste(round(gm$expenditure,2), collapse = ','), 100)`
 
 
-## Merge with Spatial Data
+
+## Merge All data with Spatial Data
+
+By this stage we have all of the location data which has been cleaned and the expenditure per suburb calculated. This has been merged to the ABS data which gives us the population and advantage / dissadvantage index for each suburb. 
+
+Now this cleaned dataset is merged with the spatial data so it can be represeted in a map.
+
 
 ```{r}
 
 abs.sub@data <- merge(abs.sub@data, ssc.pop, by = 'SSC_CODE')
-
 
 
 ```
@@ -344,7 +363,7 @@ abs.sub@data <- merge(abs.sub@data, ssc.pop, by = 'SSC_CODE')
 
 ## The Map
 
-Here is the basic map. The data is in GeoJSON format so it can be saved and used outside of R. 
+Here is the basic map. The data is subsequently saved to GeoJSON format so it can be used outside of R in the final web map. 
 
 ```{r map}
 
@@ -369,53 +388,19 @@ leaflet(abs.sub) %>%
 
 
 
-#abs.sub.json <- geojsonio::geojson_json(abs.sub)
+# save spatial data to geojson
 rgdal::writeOGR(abs.sub, dsn='abs_sub.geojson', "OGRGeoJSON", driver="GeoJSON")
 
 ```
 
 
 
-## Attemped LGA Translation
+## Annual Data for other plots
 
-I had hoped to capture some of the expenditure directed to LGA's. Currently this is on hold.
-
-```{r lga, eval=FALSE}
-
-lga.list <- "Gippsland, Bendigo, Ballarat, Geelong, Monash, Casey, Wyndham, Banyule, Yarra Ranges and Whittlesea"
-lga.list <- unlist(strsplit(lga.list, ', | and '))
-
-lga.list[lga.list == 'Bendigo'] <- 'Greater Bendigo'
-lga.list[lga.list == 'Geelong'] <- 'Greater Geelong'
-lga.list[lga.list == 'Gippsland'] <- 'East Gippsland'
-
-lga.list <- c(lga.list, c('Bass Coast',
-                           'Baw Baw',
-                           'South Gippsland',
-                           'Latrobe',
-                           'Wellington'))
-    
-# import LGA geojson
-
-lga.sp <- rgdal::readOGR(dsn = 'mapping', layer = 'lga', 
-                         p4s = "+init=epsg:4283") # I can't add this to repo not sure of licence
-lga.sub <- lga.sp[lga.sp$LGA_NAME %in% toupper(lga.list),]
-
-# get suburbs that intersect LGA subset
-
-# I suspect there is something wrong with the geometry
-tmp <- rgeos::gIntersection(suburb.sp, lga.sub, byid=TRUE) 
-
-# does not seem to return correct index values!!
-tmp <- Filter(Negate(function(x) is.null(unlist(x))), tmp) 
-
-suburbs <- suburb.sp[as.numeric(names(tmp)),]
-
-```
+This part of the data clean is more straight forward as thedata is in better shape. The purpose of the code here is to prototype plots and save data in the correct format for more or less direct pasting into final web page.
 
 
-
-## Revenue
+### Revenue
 
 
 
@@ -451,8 +436,9 @@ dygraph(revenue[,-2], periodicity = 'Year') %>%
 </div>
 
 
+### Budget
 
-```{r budget}
+```{r ann.budget}
 
 ann.rev <- select(revenue, Year, tax = `Total taxation`) %>%
     mutate(tax = tax * 1e6)
@@ -464,6 +450,15 @@ budget <- read_csv('data/VicBudget.csv') %>%
     mutate(Year = strsplit(`Financial Year`, '-'),
            Year = as.numeric(Year[1]))
 
+```
+
+
+### Population
+
+Here we used the budget economic indicators for annual population estimates. Unfortunately population estimates were missing after 2013. To fill missing data a simple linear model was used to interpolate missing data.
+
+
+```{r ann.population}
 ann.pop <- read_excel('data/2015-16-Budget-MacroeconomicIndicators.xlsx', 
                       sheet = 'Population',
                       skip = 4)[,1:2]
@@ -474,10 +469,9 @@ ann.pop <- rowwise(ann.pop) %>%
            Year = as.numeric(Year[1]),
            Population = as.integer(as.numeric(Population) * 1000))
 
+# population model
 pop.lm <- lm(Population ~ Year, ann.pop)
-
 ann.pop$predicted = predict.lm(pop.lm, ann.pop)
-
 ann.pop <- mutate(ann.pop,
                   Population = ifelse(is.na(Population), as.integer(predicted), Population))
 
@@ -496,9 +490,11 @@ write.csv(to.dygraph, 'perperson.dygraph.csv', row.names = FALSE)
 ```
 
 
+### Merge Revenue and Population Data
 
+Mergingg revenue and population gives us taxation per-person by type of tax. 
 
-```{r}
+```{r ann.rev.pop}
 
 # merge populatio to get tax types per person
 rev.dygraph <- left_join(revenue, ann.pop) %>%
@@ -510,3 +506,13 @@ write.csv(rev.dygraph[,-grep('predicted',names(rev.dygraph))], 'revenue-dygraph.
 
 ```
 
+
+## Wrap UP and Spatial data preparation
+
+The outputs of all the above are used as the basis of the final webpage which can be seen [here](http://mrjoh3.github.io). Final processing of the GeoJSON file is done using GDAL to simplify the geometry:
+
+```
+>ogr2ogr -f GeoJSON abs_sub_simple.geojson abs_sub.geojson -simplify 0.0001
+```
+
+This is done twice. The second time using `-simplify 0.001` for Internet Explorer which really struggles to load large GeoJSON files. The final step is to add `var region_data = ` the the start of each GeoJSON to simlplify inprting into the final map.
